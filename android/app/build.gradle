@@ -238,6 +238,7 @@ if (project.hasProperty('localRepos')){
 }
 
 repositories {
+    mavenCentral()
     ivy{
         name="ivy-openssl"
         url=ivyOpenssl
@@ -268,12 +269,14 @@ dependencies {
     implementation 'com.google.android.material:material:1.13.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
     testImplementation 'junit:junit:4.+'
+    testImplementation 'org.xerial:sqlite-jdbc:3.53.4.0'
     androidTestImplementation 'androidx.test.ext:junit:1.3.0'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.7.0'
     //implementation group: 'com.android.ndk.thirdparty', name: 'curl', version: '7.85.0-beta-1'
     implementation "de.wellenvogel.android.ndk.thirdparty:curl-shared:8.18.0@aar"
     //implementation 'com.android.ndk.thirdparty:openssl:1.1.1g-alpha-1'
     implementation "de.wellenvogel.android.ndk.thirdparty:openssl-shared:3.5.5@aar"
+    implementation 'org.maplibre:earcut4j:3.0.0'
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
 }
@@ -322,6 +325,10 @@ task copyToAssetsS57Data(type: org.gradle.api.tasks.Copy) {
     group = taskgroup
     from("$projectDir/../../s57data")
     into new File(assetsDir, ASSETS_S57)
+    from("$projectDir/../../provider/s57static"){
+        include("s57objectclasses.csv")
+        include("s57attributes.csv")
+    }
 }
 
 task copyToAssetsPluginData(type: org.gradle.api.tasks.Copy) {
