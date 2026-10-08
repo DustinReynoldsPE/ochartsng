@@ -44,6 +44,7 @@
     <string name="importName">Chart set name</string>
     <string name="importStarted">reading input</string>
     <string name="importRunning">import already running</string>
+    <string name="noOgr2Ogr">S-57 converter not included in this build</string>
     <string name="importDone">import finished: %1$d charts, %2$d errors</string>
     <string name="importCancelled">import cancelled</string>
     <string name="importFailed">import failed: %s</string>

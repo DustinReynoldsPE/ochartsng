@@ -217,6 +217,12 @@ public class SencConverter {
         List<File> cells=new ArrayList<>();
         collectFiles(inDir,cells);
         Collections.sort(cells);
+        long need=dirSize(inDir)*3;
+        long avail=tmp.getUsableSpace();
+        if (avail < need)
+            throw new Exception(String.format(
+                    "not enough free space: ~%d MB needed, %d MB available",
+                    need/(1024*1024),avail/(1024*1024)));
         File outDir=new File(tmp,OUT_SUB);
         if (! outDir.mkdirs()) throw new Exception("unable to create "+outDir.getAbsolutePath());
         int done=0;
@@ -318,6 +324,14 @@ public class SencConverter {
             if (sub != null) for (File s:sub) deleteRecursive(s);
         }
         f.delete();
+    }
+
+    static long dirSize(File f){
+        if (f.isFile()) return f.length();
+        long rt=0;
+        File[] sub=f.listFiles();
+        if (sub != null) for (File s:sub) rt+=dirSize(s);
+        return rt;
     }
 
     static void collectFiles(File dir,List<File> rt){

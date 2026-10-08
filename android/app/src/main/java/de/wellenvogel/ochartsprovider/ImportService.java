@@ -222,7 +222,7 @@ public class ImportService extends Service {
         };
         IntentFilter filter=new IntentFilter(Constants.BC_CANCELIMPORT);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(cancelReceiver,filter, RECEIVER_EXPORTED);
+            registerReceiver(cancelReceiver,filter, RECEIVER_NOT_EXPORTED);
         }
         else{
             registerReceiver(cancelReceiver,filter);

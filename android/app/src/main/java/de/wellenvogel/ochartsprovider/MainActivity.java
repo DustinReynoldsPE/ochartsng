@@ -396,7 +396,12 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
         inflater.inflate(R.menu.main_menu, menu);
+        if (! hasOgr2Ogr()) menu.findItem(R.id.importS57).setVisible(false);
         return true;
+    }
+
+    private boolean hasOgr2Ogr(){
+        return new java.io.File(getApplicationInfo().nativeLibraryDir, Constants.OGR2OGR).exists();
     }
 
     @Override
@@ -487,6 +492,10 @@ public class MainActivity extends AppCompatActivity {
                 showSettings();
                 return true;
             case R.id.importS57:
+                if (! hasOgr2Ogr()){
+                    Toast.makeText(this,R.string.noOgr2Ogr,Toast.LENGTH_LONG).show();
+                    return true;
+                }
                 if (ImportService.importRunning()){
                     Toast.makeText(this,R.string.importRunning,Toast.LENGTH_LONG).show();
                     return true;
