@@ -9,8 +9,9 @@ public class Constants {
     static final String POUT="providerStdout.log";
     static final String PLOG="provider.log";
     static final String EXE="libAvnavOchartsProvider.so";
-    static final String ASSET_ROOT="assets"; //unpacked data root
-    static final String LOGDIR="log"; //below filesDir
+    public static final String OGR2OGR="libOgr2Ogr.so";
+    public static final String ASSET_ROOT="assets"; //unpacked data root
+    public static final String LOGDIR="log"; //below workDir
     static final String PRFX="Ocharts";
     static final String STARTPAGE="/static/index.html";
     static final String PLUGINCSS="/static/plugin.css";

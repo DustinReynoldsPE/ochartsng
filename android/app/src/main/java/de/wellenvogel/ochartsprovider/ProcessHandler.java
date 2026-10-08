@@ -38,29 +38,29 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-class ProcessHandler {
+public class ProcessHandler {
     private Process process = null;
     String name = null;
     File logFile = null;
     Context ctx;
     ProcessState state=new ProcessState();
     HashMap<String,String> environment=new HashMap<>();
-    ProcessHandler(Context ctx,String name, File logFile) {
+    public ProcessHandler(Context ctx,String name, File logFile) {
         this.name = name;
         this.logFile = logFile;
         this.ctx=ctx;
         isAlive();
     }
-    void setEnv(String key,String val){
+    public void setEnv(String key,String val){
         environment.put(key,val);
     }
-    void unsetEnv(String key){
+    public void unsetEnv(String key){
         environment.remove(key);
     }
     String translateExitValue(int ev){
         return "Error: "+ev;
     }
-    boolean isAlive(){
+    public boolean isAlive(){
         if (process != null){
             try{
                 state.exitValue=process.exitValue();
@@ -84,11 +84,11 @@ class ProcessHandler {
         return false;
     }
 
-    ProcessState getState(){
+    public ProcessState getState(){
         isAlive();
         return state;
     }
-    void stop() {
+    public void stop() {
         if (process == null) return;
         try {
             process.destroy();
@@ -99,7 +99,7 @@ class ProcessHandler {
         }
         isAlive();
     }
-    void start(List<String> args) {
+    public void start(List<String> args) {
         Log.i(Constants.PRFX, "start exe");
         stop();
         String libDirName = ctx.getApplicationInfo().nativeLibraryDir;

@@ -14,12 +14,12 @@ class LibHandler extends ProcessHandler {
     }
 
     @Override
-    void stop() {
+    public void stop() {
         stopNative();
     }
 
     @Override
-    void start(List<String> args) {
+    public void start(List<String> args) {
         Thread runner=new Thread(new Runnable() {
             @Override
             public void run() {
@@ -44,7 +44,7 @@ class LibHandler extends ProcessHandler {
     }
 
     @Override
-    boolean isAlive() {
+    public boolean isAlive() {
         state.isRunning=isNativeRunning();
         return state.isRunning;
     }
