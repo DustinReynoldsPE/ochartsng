@@ -7,6 +7,9 @@
 
     <queries>
         <package android:name="${queryPkg}" />
+        <package android:name="de.wellenvogel.avnav.main" />
+        <package android:name="de.wellenvogel.avnav.main.debug" />
+        <package android:name="de.wellenvogel.avnav.main.beta" />
     </queries>
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
