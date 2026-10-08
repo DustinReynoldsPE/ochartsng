@@ -39,6 +39,14 @@
     <string name="altkeyMsg">Whenever you switch to/from an alternate key all charts being installed with the other key will become unusable.</string>
     <string name="altKeyTitle">Alert</string>
     <string name="btimport">Import OCPN</string>
+    <string name="importS57">Import S-57</string>
+    <string name="importTitle">Import S-57 charts</string>
+    <string name="importName">Chart set name</string>
+    <string name="importStarted">reading input</string>
+    <string name="importRunning">import already running</string>
+    <string name="importDone">import finished: %1$d charts, %2$d errors</string>
+    <string name="importCancelled">import cancelled</string>
+    <string name="importFailed">import failed: %s</string>
     <string name="export">export key</string>
     <string name="title_activity_license">License Hint</string>
     <!-- Strings used for fragments for navigation -->

@@ -27,17 +27,21 @@
 package de.wellenvogel.ochartsprovider;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.OpenableColumns;
 import android.text.Html;
 import android.util.Log;
 import android.view.Menu;
@@ -48,6 +52,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.BaseAdapter;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -59,11 +64,15 @@ import java.util.ArrayList;
 import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
+
+import de.wellenvogel.ochartsprovider.convert.SencConverter;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -125,6 +134,26 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onActivityResult(Object result) {
             nextQuery();
+        }
+    });
+
+    static class GetZipContent extends ActivityResultContracts.GetContent{
+        @SuppressLint("MissingSuperCall")
+        @NonNull
+        @Override
+        public Intent createIntent(@NonNull Context context, @NonNull String input) {
+            return new Intent(Intent.ACTION_GET_CONTENT)
+                    .addCategory(Intent.CATEGORY_OPENABLE)
+                    .setType("application/zip")
+                    .putExtra(Intent.EXTRA_MIME_TYPES,
+                            new String[]{"application/zip","application/x-zip-compressed","*/*"});
+        }
+    };
+    ActivityResultLauncher<String> getZip=registerForActivityResult(new GetZipContent(), new ActivityResultCallback<Uri>() {
+        @Override
+        public void onActivityResult(Uri result) {
+            if (result == null) return;
+            askImportName(result);
         }
     });
 
@@ -384,6 +413,70 @@ public class MainActivity extends AppCompatActivity {
         Intent s=new Intent(MainActivity.this,SettingsActivity.class);
         startActivity(s);
     }
+    private String defaultSetName(Uri uri){
+        String name=null;
+        try {
+            Cursor c=getContentResolver().query(uri,null,null,null,null);
+            if (c != null){
+                int idx=c.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (idx >= 0 && c.moveToFirst()) name=c.getString(idx);
+                c.close();
+            }
+        }catch (Throwable t){}
+        if (name == null) name=uri.getLastPathSegment();
+        if (name == null) return "";
+        int sep=name.lastIndexOf('/');
+        if (sep >= 0) name=name.substring(sep+1);
+        int dot=name.lastIndexOf('.');
+        if (dot > 0) name=name.substring(0,dot);
+        return name;
+    }
+    private void startImport(Uri uri,String name){
+        Intent i=new Intent(this,ImportService.class);
+        i.putExtra(Constants.EXTRA_URI,uri.toString());
+        i.putExtra(Constants.EXTRA_NAME,name);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(i);
+            } else {
+                startService(i);
+            }
+        }catch (Throwable t){
+            Toast.makeText(this,"unable to start import: "+t.getMessage(),Toast.LENGTH_LONG).show();
+        }
+    }
+    private void askImportName(final Uri uri){
+        final EditText input=new EditText(this);
+        input.setSingleLine();
+        input.setText(defaultSetName(uri));
+        final AlertDialog dialog=new AlertDialog.Builder(this)
+                .setTitle(R.string.importTitle)
+                .setMessage(R.string.importName)
+                .setView(input)
+                .setNegativeButton(R.string.cancel,null)
+                .setPositiveButton(R.string.ok,null)
+                .create();
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface dialogInterface) {
+                dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        String name=input.getText().toString().trim();
+                        try {
+                            SencConverter.checkSetName(name);
+                        }catch (Exception e){
+                            Toast.makeText(MainActivity.this,e.getMessage(),Toast.LENGTH_LONG).show();
+                            return;
+                        }
+                        dialog.dismiss();
+                        startImport(uri,name);
+                    }
+                });
+            }
+        });
+        dialog.show();
+    }
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch(item.getItemId()){
@@ -392,6 +485,13 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.settings:
                 showSettings();
+                return true;
+            case R.id.importS57:
+                if (ImportService.importRunning()){
+                    Toast.makeText(this,R.string.importRunning,Toast.LENGTH_LONG).show();
+                    return true;
+                }
+                getZip.launch("application/zip");
                 return true;
         }
         return super.onOptionsItemSelected(item);

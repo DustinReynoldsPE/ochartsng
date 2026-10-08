@@ -2,6 +2,12 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/importS57"
+        android:icon="@android:drawable/ic_menu_upload"
+        android:title="@string/importS57"
+        app:showAsAction="ifRoom">
+    </item>
+    <item
         android:id="@+id/settings"
         android:icon="@android:drawable/ic_menu_manage"
         android:title="@string/settings"

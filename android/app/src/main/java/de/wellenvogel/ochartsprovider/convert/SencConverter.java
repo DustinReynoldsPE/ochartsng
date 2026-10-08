@@ -345,7 +345,7 @@ public class SencConverter {
         if (sep >= 0) name=name.substring(sep+1);
         return SqliteToSenc.splitext(name)[0];
     }
-    private static void checkSetName(String setName) throws Exception {
+    public static void checkSetName(String setName) throws Exception {
         if (setName == null || setName.isEmpty()) throw new Exception("empty set name");
         if (setName.contains("/") || setName.contains("\\") || setName.contains(".."))
             throw new Exception("invalid set name "+setName);

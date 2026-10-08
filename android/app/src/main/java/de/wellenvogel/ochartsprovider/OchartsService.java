@@ -389,9 +389,9 @@ public class OchartsService extends Service implements ChartListFetcher.ResultHa
         return true;
     }
 
-    private boolean copyAssetDir(String assetDir,File targetSub){
+    private static boolean copyAssetDir(Context ctx,String assetDir,File targetSub){
         try{
-            String [] assetFiles=getAssets().list(assetDir);
+            String [] assetFiles=ctx.getAssets().list(assetDir);
             if (assetFiles.length < 1) return false;
             if (! targetSub.isDirectory()){
                 targetSub.mkdirs();
@@ -400,10 +400,10 @@ public class OchartsService extends Service implements ChartListFetcher.ResultHa
                 String assetPath=assetDir+"/"+assetFile;
                 Log.i(Constants.PRFX,"copy asset file "+assetPath);
                 File target=new File(targetSub,assetFile);
-                if (copyAssetDir(assetPath,target)){
+                if (copyAssetDir(ctx,assetPath,target)){
                     continue;
                 }
-                InputStream is=getAssets().open(assetPath);
+                InputStream is=ctx.getAssets().open(assetPath);
                 OutputStream os=new FileOutputStream(target);
                 int BUFFERSIZE=10*1024;
                 byte []buffer=new byte[BUFFERSIZE];
@@ -420,9 +420,9 @@ public class OchartsService extends Service implements ChartListFetcher.ResultHa
         }
         return false;
     }
-    private void copyAssets() throws Exception {
+    static void copyAssets(Context ctx) throws Exception {
         String[] subDirs=new String[]{BuildConfig.ASSETS_GUI,BuildConfig.ASSETS_S57, BuildConfig.ASSETS_PLUGIN};
-        File targetBase=new File(getFilesDir(), Constants.ASSET_ROOT);
+        File targetBase=new File(ctx.getFilesDir(), Constants.ASSET_ROOT);
         if (!targetBase.isDirectory()){
             targetBase.mkdirs();
         }
@@ -441,13 +441,13 @@ public class OchartsService extends Service implements ChartListFetcher.ResultHa
             else{
                 recursiveDelete(targetSub,false);
             }
-            copyAssetDir(sub,targetSub);
+            copyAssetDir(ctx,sub,targetSub);
         }
     }
     boolean startUp(){
         try {
             try{
-                copyAssets();
+                copyAssets(this);
             }catch (Throwable t){
                 Toast.makeText(this,tprfx+"unable to copy assets for ocharts: "+t.getMessage(),Toast.LENGTH_LONG).show();
                 return false;
