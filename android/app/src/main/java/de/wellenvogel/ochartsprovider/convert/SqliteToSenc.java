@@ -240,10 +240,12 @@ public class SqliteToSenc {
 
     static String readTxtFile(File f) throws Exception {
         byte[] raw = Files.readAllBytes(f.toPath());
-        return StandardCharsets.UTF_8.newDecoder()
+        String txt = StandardCharsets.UTF_8.newDecoder()
                 .onMalformedInput(CodingErrorAction.IGNORE)
                 .onUnmappableCharacter(CodingErrorAction.IGNORE)
                 .decode(ByteBuffer.wrap(raw)).toString();
+        //python open(fn,"r") reads in universal-newline mode: \r\n and \r become \n
+        return txt.replace("\r\n", "\n").replace("\r", "\n");
     }
 
     static boolean objectToSenc(SencWriter wh, String name, Map<String, Object> dbrow, String gcol, List<String> jsonColumns, String basedir) throws Exception {
