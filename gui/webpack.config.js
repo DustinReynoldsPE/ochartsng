@@ -25,6 +25,7 @@
  SOFTWARE.
  */
 const path=require('path');
+const fs=require('fs');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const HtmlWebpackPlugin = require('html-webpack-plugin');
@@ -57,8 +58,14 @@ module.exports = function(env,argv) {
       tokenScripts.push({ from: TOKENBASE+'tokenHandler.js'});
     }
     else{
+        //tokenHandlerDebug.js is a symlink into a private repo that may be
+        //dangling for forks - fall back to the committed release handler
+        var dbgTokenScript=TOKENBASE+'tokenHandlerDebug.js';
+        if (! fs.existsSync(dbgTokenScript)){
+            dbgTokenScript=TOKENBASE+'tokenHandler.js';
+        }
         tokenScripts.push(
-            { from: TOKENBASE+'tokenHandlerDebug.js',to:'tokenHandler.js'},
+            { from: dbgTokenScript,to:'tokenHandler.js'},
             { from: TOKENBASE+'tktest.html'}
             );
     }

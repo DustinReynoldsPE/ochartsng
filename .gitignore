@@ -2,6 +2,7 @@
 **/*.log
 .gradle
 android/app/src/main/jniLibs
+android/assets
 gui/node_modules
 .idea
 *iml
