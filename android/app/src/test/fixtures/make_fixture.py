@@ -1,16 +1,52 @@
 #! /usr/bin/env python3
 #creates fixture.sqlite (ogr2ogr-sqlite style, small subset) and the
 #reference fixture.senc by running the upstream tools.senc pipeline.
-#usage: PYTHONPATH=<dir with mapbox_earcut> python3 make_fixture.py
+#
+#usage:
+#  PYTHONPATH=<dir with mapbox_earcut> python3 make_fixture.py
+#      regenerates the synthetic fixture only
+#  PYTHONPATH=... python3 make_fixture.py corpus
+#      additionally downloads the NOAA cells and regenerates
+#      resources/convert/corpus/<cell>/{<cell>.000,*.TXT,<cell>.sqlite.gz,
+#      <cell>.senc.gz}
+#
+#corpus requirements:
+#  - python packages: mapbox-earcut, numpy (e.g. uv venv .venv &&
+#    uv pip install mapbox-earcut numpy, then run with .venv/bin/python)
+#  - ogr2ogr: either on PATH or via docker image
+#    ghcr.io/osgeo/gdal:ubuntu-small-latest (automatic fallback)
+#  - network access to www.charts.noaa.gov
+#
+#note: NOAA zips also ship .001/.002 update files. GDAL's s57 reader
+#applies them automatically when they sit next to the .000 - which is what
+#upstream tools/tosenc.py does (extractall, then convert the .000).
+#the corpus therefore keeps the update files: the generated .sqlite/.senc
+#reflect the cell WITH updates applied.
+import glob
+import gzip
 import os
+import shutil
 import sqlite3
 import struct
+import subprocess
 import sys
+import urllib.request
+import zipfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "resources", "convert")
+CORPUS = os.path.join(OUT, "corpus")
 ROOT = os.path.abspath(os.path.join(HERE, "..", "..", "..", "..", ".."))
 sys.path.insert(0, ROOT)
+
+GDAL_IMAGE = "ghcr.io/osgeo/gdal:ubuntu-small-latest"
+CELLS = {
+    #small band-5 cell: TXTDSC sidecars, holes, soundings, lines
+    "US5TX12M": "https://www.charts.noaa.gov/ENCs/US5TX12M.zip",
+    #band-5 harbor cell (Galveston entrance): many object classes,
+    #46 TXTDSC references, multipoint soundings
+    "US5TX51M": "https://www.charts.noaa.gov/ENCs/US5TX51M.zip",
+}
 
 
 def point(lon, lat, z=None):
@@ -33,7 +69,7 @@ def linestring(pts):
     return rt
 
 
-def main():
+def make_fixture():
     os.makedirs(OUT, exist_ok=True)
     dbn = os.path.join(OUT, "fixture.sqlite")
     if os.path.exists(dbn):
@@ -95,6 +131,75 @@ def main():
     options.s57dir = os.path.join(ROOT, "provider", "s57static")
     options.basedir = OUT
     sqlite2senc.main(dbn, os.path.join(OUT, "fixture.senc"), options)
+
+
+def ogr2ogr(workdir, ifile, ofile):
+    '''run the same conversion as tools/tosenc.py convertGdal().
+    prefers a host ogr2ogr, falls back to the osgeo/gdal docker image.'''
+    if shutil.which("ogr2ogr"):
+        cmd = ["ogr2ogr", "-f", "SQLite", ofile, ifile, "-oo", "LIST_AS_STRING=ON"]
+    elif shutil.which("docker"):
+        cmd = ["docker", "run", "--rm",
+               "--user", "%d:%d" % (os.getuid(), os.getgid()),
+               "-v", workdir + ":/work", GDAL_IMAGE,
+               "ogr2ogr", "-f", "SQLite",
+               "/work/" + os.path.basename(ofile),
+               "/work/" + os.path.basename(ifile),
+               "-oo", "LIST_AS_STRING=ON"]
+    else:
+        raise Exception("need ogr2ogr on PATH or docker for the corpus")
+    print("running:", " ".join(cmd))
+    proc = subprocess.run(cmd)
+    if proc.returncode != 0:
+        raise Exception("ogr2ogr returned %d" % proc.returncode)
+
+
+def make_corpus():
+    from tools.senc import sqlite2senc
+
+    os.makedirs(CORPUS, exist_ok=True)
+    for cell, url in CELLS.items():
+        cdir = os.path.join(CORPUS, cell)
+        os.makedirs(cdir, exist_ok=True)
+        zipname = os.path.join(cdir, cell + ".zip")
+        if not os.path.exists(zipname):
+            print("downloading %s" % url)
+            urllib.request.urlretrieve(url, zipname)
+        with zipfile.ZipFile(zipname) as zf:
+            for n in zf.namelist():
+                base = os.path.basename(n)
+                if (base.upper().endswith(".TXT")
+                        or base.upper().endswith(".000")
+                        or (base.upper().startswith(cell)
+                            and base.upper()[-4:-1] == ".00")):
+                    if os.path.dirname(n).endswith(cell):
+                        print("  extract %s" % base)
+                        with zf.open(n) as src, \
+                                open(os.path.join(cdir, base), "wb") as dst:
+                            shutil.copyfileobj(src, dst)
+        os.remove(zipname)
+        src = os.path.join(cdir, cell + ".000")
+        sql = os.path.join(cdir, cell + ".sqlite")
+        senc = os.path.join(cdir, cell + ".senc")
+        ogr2ogr(cdir, src, sql)
+        options = sqlite2senc.Options()
+        options.s57dir = os.path.join(ROOT, "provider", "s57static")
+        options.basedir = cdir
+        sqlite2senc.main(sql, senc, options)
+        for fn in (sql, senc):
+            with open(fn, "rb") as i, gzip.open(fn + ".gz", "wb",
+                                               compresslevel=9) as o:
+                shutil.copyfileobj(i, o)
+            os.remove(fn)
+        print("corpus %s: %d bytes" % (cell,
+                                       sum(os.path.getsize(f) for f in
+                                           glob.glob(cdir + "/*"))))
+
+
+def main():
+    make_fixture()
+    if len(sys.argv) > 1 and sys.argv[1] in ("corpus", "all"):
+        make_corpus()
 
 
 if __name__ == "__main__":

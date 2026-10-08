@@ -8,3 +8,5 @@ gui/node_modules
 provider/external
 provider/include/generated
 gui/generated
+__pycache__/
+*.pyc
