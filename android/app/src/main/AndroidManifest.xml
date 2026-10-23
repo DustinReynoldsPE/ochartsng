@@ -4,6 +4,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
 
     <queries>
         <package android:name="${queryPkg}" />
@@ -51,6 +53,17 @@
             android:authorities="de.wellenvogel.ochartsprovider${suffix}.pluginprovider"
             android:exported="true"
             android:grantUriPermissions="true" />
+
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:directBootAware="true"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.LOCKED_BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".OchartsService"
